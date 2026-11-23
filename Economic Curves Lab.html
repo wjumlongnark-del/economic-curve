@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Econ Curves Lab</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style>
+:root{--bg:#f4f6fb;--sf:#fff;--tx:#1b2433;--mu:#5b6678;--ac:#2563eb;--bd:#d9dfeb;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0f1420;--sf:#19202f;--tx:#e8ecf5;--mu:#9aa6bd;--ac:#6ea0ff;--bd:#2c3650}}
+*{box-sizing:border-box}html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.55 "Sarabun","Noto Sans Thai",system-ui,sans-serif}
+.wrap{max-width:1100px;margin:auto;padding:16px}
+header{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+h1{font-size:1.5rem;margin:0}h2{font-size:1.05rem;margin:0 0 8px}h3{font-size:.95rem;margin:0 0 6px}
+.sub{color:var(--mu);margin:2px 0 0}
+.card{background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:14px;margin-top:14px}
+button,.btn{font:inherit;border:1px solid var(--bd);background:var(--sf);color:var(--tx);padding:8px 14px;border-radius:8px;cursor:pointer}
+button:hover,.btn:hover{border-color:var(--ac)}
+.on{background:var(--ac);color:#fff;border-color:var(--ac)}
+.pri{background:var(--ac);color:#fff;border-color:var(--ac);font-weight:600}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+input[type=text],textarea,input[type=number]{font:inherit;width:100%;padding:9px;border-radius:8px;border:1px solid var(--bd);background:var(--bg);color:var(--tx)}
+textarea{min-height:140px;font-family:ui-monospace,monospace}
+.cw{position:relative;max-width:480px}
+#clist{position:absolute;left:0;right:0;top:100%;z-index:20;background:var(--sf);border:1px solid var(--bd);border-radius:8px;max-height:260px;overflow:auto;margin:2px 0 0;padding:0;list-style:none;display:none;box-shadow:0 8px 24px #0003}
+#clist li{padding:7px 12px;cursor:pointer}#clist li:hover,#clist li.h{background:var(--ac);color:#fff}
+.hint{color:var(--mu);font-size:.88rem;margin:6px 0}
+.err{color:#dc2626;font-weight:600}
+.cap{background:#fff;color:#111;padding:14px;border-radius:8px;overflow-x:auto}
+.cap table{border-collapse:collapse;width:100%;margin:6px 0 12px;font-size:.88rem}
+.cap th,.cap td{border:1px solid #cfd6e4;padding:5px 9px;text-align:right}
+.cap th{background:#e8eefc}.cap td:first-child,.cap th:first-child{text-align:left}
+.cap .note{font-size:.9rem;line-height:1.6}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,460px),1fr));gap:14px}
+.ch{background:#fff;color:#111;border:1px solid var(--bd);border-radius:12px;padding:12px}
+.ch div.box{height:320px;position:relative}
+.ch .row{margin-top:8px;font-size:.88rem}
+.hide{display:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+ <div><h1 data-i="title"></h1><p class="sub" data-i="sub"></p></div>
+ <div class="row"><button id="bth" class="on">ไทย</button><button id="ben">English</button></div>
+</header>
+
+<div class="card"><h2 data-i="s1"></h2><div class="row" id="abtn"></div><p class="hint" id="ahint"></p></div>
+
+<div class="card"><h2 data-i="s2"></h2>
+ <div class="cw"><input type="text" id="country" autocomplete="off"><ul id="clist"></ul></div>
+ <p class="hint" id="ccount"></p>
+</div>
+
+<div class="card"><h2 data-i="s3"></h2>
+ <div id="hdp" class="row hide" style="margin-bottom:8px">
+  <label>δ (%) <input type="number" id="hdd" value="0" step="0.1" style="width:110px"></label>
+  <label data-i="gdp0"></label><input type="number" id="hdg" value="100" style="width:120px">
+ </div>
+ <textarea id="data"></textarea>
+ <p class="hint" id="dhint"></p>
+ <div class="row">
+  <label class="btn"><span data-i="up"></span><input type="file" id="file" accept=".xlsx,.xls,.csv" hidden></label>
+  <button id="bsample" data-i="sample"></button>
+  <button id="bproc" class="pri" data-i="proc"></button>
+  <button id="breset" data-i="reset"></button>
+ </div>
+ <p id="msg" class="err"></p>
+</div>
+
+<div id="after" class="card hide">
+ <div class="row"><button id="bt" data-i="btab"></button><button id="bg" data-i="bgr"></button></div>
+</div>
+
+<div id="ptab" class="card hide">
+ <div id="cap" class="cap"></div>
+ <div class="row" style="margin-top:10px"><button id="dpng" data-i="dpng"></button><button id="dxls" data-i="dxls"></button></div>
+</div>
+<div id="pgr" class="hide"><div class="grid" id="grid"></div></div>
+</div>
+
+<script>
+const I={
+title:["ห้องทดลองเส้นโค้งเศรษฐศาสตร์","Economic Curves Lab"],
+sub:["วิเคราะห์ Lorenz · Kuznets · Laffer · Phillips · Say’s Law · Harrod-Domar","Analyse Lorenz · Kuznets · Laffer · Phillips · Say’s Law · Harrod-Domar"],
+s1:["1) เลือกการวิเคราะห์","1) Choose analysis"],s2:["2) เลือกประเทศ","2) Choose country"],s3:["3) ใส่ข้อมูล หรือแนบไฟล์ Excel","3) Enter data or attach Excel"],
+up:["📎 แนบไฟล์ Excel/CSV","📎 Attach Excel/CSV"],sample:["🧪 ทดลองข้อมูล","🧪 Try sample data"],proc:["⚙️ ประมวลผลข้อมูล","⚙️ Process data"],reset:["♻️ Reset","♻️ Reset"],
+btab:["📋 ประมวลผลตาราง","📋 Show table"],bgr:["📊 แสดงผลเป็นกราฟ","📊 Show graphs"],dpng:["⬇️ ดาวน์โหลดตาราง PNG","⬇️ Download table PNG"],dxls:["⬇️ ดาวน์โหลด Excel","⬇️ Download Excel"],
+gdp0:["GDP เริ่มต้น","Initial GDP"],showv:["แสดงตัวเลขบนกราฟ","Show values on chart"],gpng:["⬇️ ดาวน์โหลด PNG","⬇️ Download PNG"]};
+const A={
+lorenz:{n:["Lorenz Curve","Lorenz Curve"],k:1,h:["1 คอลัมน์: รายได้ของแต่ละครัวเรือน/กลุ่ม (ตัวเลขต่อบรรทัด)","1 column: income of each household/group (one number per line)"],
+ s:"12000\n15000\n18000\n22000\n27000\n33000\n42000\n58000\n85000\n190000"},
+kuznets:{n:["Kuznets Curve","Kuznets Curve"],k:2,h:["2 คอลัมน์: รายได้ต่อหัว, ค่า Gini (อาจมีคอลัมน์แรกเป็นปี/ชื่อ)","2 columns: income per capita, Gini (optional leading label/year column)"],
+ s:"800,32\n1500,38\n3000,44\n5000,49\n8000,52\n12000,50\n18000,46\n25000,41\n35000,37\n48000,34"},
+laffer:{n:["Laffer Curve","Laffer Curve"],k:2,h:["2 คอลัมน์: อัตราภาษี (%), รายได้ภาษี","2 columns: tax rate (%), tax revenue"],
+ s:"0,0\n10,95\n20,170\n30,225\n40,260\n50,270\n60,250\n70,200\n80,125\n90,45"},
+phillips:{n:["Phillips Curve","Phillips Curve"],k:2,h:["2 คอลัมน์: อัตราว่างงาน (%), เงินเฟ้อ (%) (คอลัมน์แรกเป็นปีได้)","2 columns: unemployment (%), inflation (%) (leading year column optional)"],
+ s:"2012,3.5,4.8\n2013,4.0,3.9\n2014,4.6,3.2\n2015,5.2,2.6\n2016,5.9,2.1\n2017,6.5,1.7\n2018,7.4,1.3\n2019,8.3,0.9\n2020,9.2,0.4"},
+say:{n:["Say’s Law","Say’s Law"],k:2,h:["2 คอลัมน์: อุปทานรวม AS, อุปสงค์รวม AD (คอลัมน์แรกเป็นปีได้)","2 columns: aggregate supply AS, aggregate demand AD (leading year column optional)"],
+ s:"2015,1000,985\n2016,1060,1050\n2017,1125,1118\n2018,1190,1201\n2019,1260,1243\n2020,1190,1105\n2021,1250,1240\n2022,1330,1342\n2023,1410,1395"},
+hd:{n:["Harrod-Domar","Harrod-Domar"],k:2,h:["2 คอลัมน์: อัตราออม s (%), อัตราส่วนทุนต่อผลผลิต v (คอลัมน์แรกเป็นปีได้) · g = s/v − δ","2 columns: saving rate s (%), capital-output ratio v (leading year column optional) · g = s/v − δ"],
+ s:"2015,18,3.5\n2016,20,3.6\n2017,22,3.8\n2018,24,3.8\n2019,25,4.0\n2020,21,4.2\n2021,23,4.0\n2022,26,4.1\n2023,28,4.2"}};
+const P=['#2563eb','#dc2626','#16a34a','#f59e0b','#7c3aed','#0891b2','#db2777','#65a30d'];
+let lang='th',key='lorenz',country=null,res=null,charts=[];
+const $=id=>document.getElementById(id),T=(a,b)=>lang==='th'?a:b,i18=k=>I[k][lang==='th'?0:1];
+const f=(x,d=3)=>isFinite(x)?(+x).toFixed(d):'–';
+const sum=a=>a.reduce((p,c)=>p+c,0),mean=a=>sum(a)/a.length;
+
+/* ---------- countries ---------- */
+const EX=new Set("AC CP DG EA EU EZ IC TA UN XA XB QO ZZ AN BU CS DD FX NT SU TP YD YU ZR QU".split(" "));
+const DN={th:new Intl.DisplayNames(['th'],{type:'region'}),en:new Intl.DisplayNames(['en'],{type:'region'})};
+const C=[];
+for(let a=65;a<91;a++)for(let b=65;b<91;b++){const c=String.fromCharCode(a,b);if(EX.has(c))continue;let e;try{e=DN.en.of(c)}catch(x){continue}
+ if(!e||e===c||/Unknown|Pseudo/i.test(e))continue;C.push({c,en:e,th:DN.th.of(c)||e,fl:String.fromCodePoint(127397+a,127397+b)})}
+const cn=o=>o[lang];
+function showList(){const q=$('country').value.trim().toLowerCase(),ul=$('clist');
+ let L=C.filter(o=>!q||o.th.toLowerCase().startsWith(q)||o.en.toLowerCase().startsWith(q));
+ if(q)L=L.concat(C.filter(o=>!L.includes(o)&&(o.th.toLowerCase().includes(q)||o.en.toLowerCase().includes(q))));
+ L.sort((a,b)=>cn(a).localeCompare(cn(b),lang));
+ ul.innerHTML=L.map(o=>`<li data-c="${o.c}">${o.fl} ${cn(o)}</li>`).join('')||`<li>—</li>`;ul.style.display='block'}
+$('country').addEventListener('input',()=>{country=null;showList()});
+$('country').addEventListener('focus',showList);
+$('clist').addEventListener('mousedown',e=>{const li=e.target.closest('li[data-c]');if(!li)return;country=C.find(o=>o.c===li.dataset.c);$('country').value=cn(country);$('clist').style.display='none'});
+document.addEventListener('click',e=>{if(!e.target.closest('.cw'))$('clist').style.display='none'});
+const cname=()=>country?`${country.fl} ${cn(country)}`:'';
+
+/* ---------- UI ---------- */
+function applyLang(){document.documentElement.lang=lang;document.querySelectorAll('[data-i]').forEach(e=>e.textContent=i18(e.dataset.i));
+ $('bth').classList.toggle('on',lang==='th');$('ben').classList.toggle('on',lang==='en');
+ $('abtn').innerHTML=Object.keys(A).map(k=>`<button data-k="${k}" class="${k===key?'on':''}">${A[k].n[0]}</button>`).join('');
+ $('ahint').textContent=A[key].h[lang==='th'?0:1];$('dhint').textContent=$('ahint').textContent;
+ $('country').placeholder=T("พิมพ์ชื่อประเทศ เช่น ไ, ญ, U …","Type a country, e.g. T, J, U …");
+ $('ccount').textContent=T(`มี ${C.length} ประเทศ/ดินแดนในรายการ`,`${C.length} countries/territories listed`);
+ $('data').placeholder=T("วางข้อมูลที่นี่ (คั่นด้วยจุลภาค/แท็บ) หรือแนบไฟล์ Excel","Paste data here (comma/tab separated) or attach an Excel file");
+ $('hdp').classList.toggle('hide',key!=='hd');
+ if(country)$('country').value=cn(country);
+ if(res){res=run();showT();if(!$('pgr').classList.contains('hide'))showG()}}
+$('abtn').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;key=b.dataset.k;res=null;['after','ptab','pgr'].forEach(i=>$(i).classList.add('hide'));applyLang()});
+$('bth').onclick=()=>{lang='th';applyLang()};$('ben').onclick=()=>{lang='en';applyLang()};
+$('bsample').onclick=()=>{$('data').value=A[key].s;$('msg').textContent=''};
+$('file').onchange=async e=>{const fl=e.target.files[0];if(!fl)return;
+ try{const wb=XLSX.read(await fl.arrayBuffer());const rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1});
+  $('data').value=rows.filter(r=>r.length).map(r=>r.join(',')).join('\n')}catch(x){$('msg').textContent=T("อ่านไฟล์ไม่ได้","Cannot read file")}e.target.value=''};
+$('breset').onclick=()=>{res=null;country=null;$('country').value='';$('data').value='';$('msg').textContent='';$('hdd').value=0;$('hdg').value=100;
+ ['after','ptab','pgr'].forEach(i=>$(i).classList.add('hide'));killCharts();$('grid').innerHTML='';scrollTo(0,0)};
+$('bproc').onclick=()=>{$('msg').textContent='';try{res=run();$('after').classList.remove('hide');$('ptab').classList.add('hide');$('pgr').classList.add('hide')}
+ catch(x){res=null;$('msg').textContent=x&&x.m?x.m:T("ข้อมูลไม่ถูกต้องหรือน้อยเกินไป (ตรวจสอบรูปแบบคอลัมน์)","Invalid or too little data (check the column format)")}};
+$('bt').onclick=showT;$('bg').onclick=showG;
+
+/* ---------- parsing & maths ---------- */
+function parse(k){const rows=$('data').value.split(/\r?\n/).map(s=>s.trim()).filter(Boolean).map(l=>l.split(/[,\t;]+/).map(s=>s.trim()));
+ const cols=Array.from({length:k},()=>[]),labels=[];let n=0;
+ rows.forEach(r=>{const v=r.slice(-k).map(Number);if(r.length<k||v.some(x=>!isFinite(x)||r.slice(-k)[0]===''))return;n++;labels.push(r.length>k?r[0]:String(n));v.forEach((x,i)=>cols[i].push(x))});
+ return{cols,labels,n}}
+function solve3(M,t){const m=M.map((r,i)=>[...r,t[i]]);for(let i=0;i<3;i++){let p=i;for(let r=i+1;r<3;r++)if(Math.abs(m[r][i])>Math.abs(m[p][i]))p=r;[m[i],m[p]]=[m[p],m[i]];
+ if(Math.abs(m[i][i])<1e-12)throw 0;for(let r=0;r<3;r++)if(r!==i){const q=m[r][i]/m[i][i];for(let c=i;c<4;c++)m[r][c]-=q*m[i][c]}}return m.map((r,i)=>r[3]/r[i])}
+function fit2(x,y){const m=mean(x),sd=Math.sqrt(mean(x.map(v=>(v-m)**2)))||1,z=x.map(v=>(v-m)/sd),s=k=>sum(z.map(v=>v**k));
+ const [a,b,c]=solve3([[z.length,s(1),s(2)],[s(1),s(2),s(3)],[s(2),s(3),s(4)]],[sum(y),sum(z.map((v,i)=>v*y[i])),sum(z.map((v,i)=>v*v*y[i]))]);
+ return{a:a-b*m/sd+c*m*m/(sd*sd),b:b/sd-2*c*m/(sd*sd),c:c/(sd*sd)}}
+function fit1(x,y){const mx=mean(x),my=mean(y),sxx=sum(x.map(v=>(v-mx)**2)),sxy=sum(x.map((v,i)=>(v-mx)*(y[i]-my)));const b=sxy/sxx;return{a:my-b*mx,b}}
+const R2=(y,h)=>{const m=mean(y),t=sum(y.map(v=>(v-m)**2));return t?1-sum(y.map((v,i)=>(v-h[i])**2))/t:NaN};
+const corr=(x,y)=>{const mx=mean(x),my=mean(y);return sum(x.map((v,i)=>(v-mx)*(y[i]-my)))/Math.sqrt(sum(x.map(v=>(v-mx)**2))*sum(y.map(v=>(v-my)**2)))};
+const sp=(a,b,n=50)=>Array.from({length:n+1},(_,i)=>a+(b-a)*i/n);
+const sgn=a=>a.map(v=>v>=0?'#16a34a':'#dc2626');
+const sc=(x,y)=>({x:{type:'linear',title:{display:true,text:x}},y:{title:{display:true,text:y}}});
+const D=(label,data,c,o={})=>({label,data,borderColor:c,backgroundColor:c+'99',...o});
+const FIT={pointRadius:0,showLine:true,noVals:true,fill:false,tension:.3};
+
+function run(){const a=A[key];const d=parse(a.k);if(d.n<(key==='lorenz'?2:3))throw 0;
+ const o=({lorenz,kuznets:d=>quad(d,0),laffer:d=>quad(d,1),phillips,say,hd})[key](d);o.title=`${a.n[0]}${country?' — '+cname():''}`;return o}
+
+/* ---------- analyses ---------- */
+function lorenz(d){const inc=d.cols[0].filter(v=>v>=0).sort((a,b)=>a-b),n=inc.length,tot=sum(inc);if(!tot)throw 0;
+ let c=0;const Pp=[0],L=[0];inc.forEach((v,i)=>{c+=v;Pp.push((i+1)/n);L.push(c/tot)});
+ let g=0;for(let i=1;i<=n;i++)g+=(Pp[i]-Pp[i-1])*(L[i]+L[i-1]);g=1-g;
+ const at=p=>{const pos=p*n,i=Math.min(Math.floor(pos),n-1);return L[i]+(L[i+1]-L[i])*(pos-i)};
+ const Q=[1,2,3,4,5].map(k=>(at(k/5)-at((k-1)/5))*100),top=(1-at(.9))*100,b40=at(.4)*100;
+ const med=n%2?inc[(n-1)/2]:(inc[n/2-1]+inc[n/2])/2;
+ const ql=[1,2,3,4,5].map(k=>T('กลุ่ม '+k,'Q'+k));
+ return{tables:[{t:T("ตารางข้อมูล Lorenz","Lorenz data table"),h:[T("ลำดับ","Rank"),T("รายได้","Income"),T("สัดส่วนประชากรสะสม (%)","Cum. population (%)"),T("สัดส่วนรายได้สะสม (%)","Cum. income (%)"),T("เส้นเท่าเทียม (%)","Equality line (%)"),T("ส่วนต่าง (%)","Gap (%)")],
+  r:inc.map((v,i)=>[i+1,f(v,2),f(Pp[i+1]*100,2),f(L[i+1]*100,2),f(Pp[i+1]*100,2),f((Pp[i+1]-L[i+1])*100,2)])},
+ {t:T("สถิติวิเคราะห์","Statistics"),h:[T("ตัวชี้วัด","Measure"),T("ค่า","Value")],r:[[T("จำนวนหน่วย (n)","Observations (n)"),n],[T("รายได้รวม","Total income"),f(tot,2)],[T("ค่าเฉลี่ย","Mean"),f(tot/n,2)],[T("มัธยฐาน","Median"),f(med,2)],["Gini coefficient",f(g,4)],[T("ส่วนแบ่ง 10% บนสุด (%)","Top 10% share (%)"),f(top,2)],[T("ส่วนแบ่ง 40% ล่างสุด (%)","Bottom 40% share (%)"),f(b40,2)],["Palma ratio",f(top/b40,3)],...Q.map((q,i)=>[T('ส่วนแบ่งรายได้ '+ql[i],'Income share '+ql[i]),f(q,2)+'%'])]}],
+ note:T(`เส้น Lorenz แสดงสัดส่วนรายได้สะสมเทียบกับสัดส่วนประชากรสะสม ยิ่งโค้งห่างจากเส้นทแยงมุม (เส้นเท่าเทียม) ยิ่งกระจายรายได้ไม่เท่าเทียม ค่า Gini = ${f(g,4)} (0 = เท่าเทียมสมบูรณ์, 1 = ไม่เท่าเทียมสมบูรณ์) ${g<.3?'อยู่ในระดับค่อนข้างเท่าเทียม':g<.45?'อยู่ในระดับปานกลาง':'อยู่ในระดับความเหลื่อมล้ำสูง'} กลุ่ม 10% บนสุดถือครองรายได้ ${f(top,1)}% ขณะที่ 40% ล่างสุดได้ ${f(b40,1)}% (Palma = ${f(top/b40,2)})`,
+  `The Lorenz curve plots cumulative income share against cumulative population share; the further it bows below the 45° equality line, the more unequal the distribution. Gini = ${f(g,4)} (0 = perfect equality, 1 = perfect inequality) — ${g<.3?'relatively equal':g<.45?'moderate inequality':'high inequality'}. The top 10% hold ${f(top,1)}% of income versus ${f(b40,1)}% for the bottom 40% (Palma = ${f(top/b40,2)}).`),
+ charts:[{t:T("เส้น Lorenz","Lorenz curve"),cfg:{type:'scatter',data:{datasets:[D('Lorenz',Pp.map((p,i)=>({x:p*100,y:L[i]*100})),P[0],{showLine:true,pointRadius:3,backgroundColor:P[0]}),D(T('เส้นเท่าเทียม','Equality'),[{x:0,y:0},{x:100,y:100}],'#888',{showLine:true,pointRadius:0,noVals:true,borderDash:[6,4]})]},options:{scales:sc(T('ประชากรสะสม (%)','Cumulative population (%)'),T('รายได้สะสม (%)','Cumulative income (%)'))}}},
+  {t:T("ส่วนแบ่งรายได้ตามกลุ่ม 20%","Income share by quintile"),cfg:{type:'bar',data:{labels:ql,datasets:[D(T('ส่วนแบ่งจริง (%)','Actual (%)'),Q,P[1],{backgroundColor:P[1]}),D(T('เท่าเทียม (20%)','Equal (20%)'),Q.map(()=>20),'#888',{type:'line',pointRadius:0,noVals:true,borderDash:[5,4]})]}}},
+  {t:T("สัดส่วนรายได้ (โดนัท)","Income shares (doughnut)"),cfg:{type:'doughnut',data:{labels:ql,datasets:[{data:Q,backgroundColor:P.slice(0,5)}]}}},
+  {t:T("เรดาร์: จริงเทียบเท่าเทียม","Radar: actual vs equal"),cfg:{type:'radar',data:{labels:ql,datasets:[D(T('จริง','Actual'),Q,P[2]),D(T('เท่าเทียม','Equal'),Q.map(()=>20),P[3],{noVals:true})]}}},
+  {t:T("รายได้เรียงจากน้อยไปมาก","Sorted incomes"),cfg:{type:'bar',data:{labels:inc.map((_,i)=>i+1),datasets:[D(T('รายได้','Income'),inc,P[4],{backgroundColor:P[4]})]}}},
+  {t:T("ส่วนต่างจากเส้นเท่าเทียม","Gap from equality"),cfg:{type:'line',data:{labels:Pp.map(p=>f(p*100,0)+'%'),datasets:[D(T('ส่วนต่าง (%)','Gap (%)'),Pp.map((p,i)=>(p-L[i])*100),P[5],{fill:true})]}}}]}}
+
+function quad(d,laf){const idx=d.cols[0].map((_,i)=>i).sort((a,b)=>d.cols[0][a]-d.cols[0][b]);
+ const x=idx.map(i=>d.cols[0][i]),y=idx.map(i=>d.cols[1][i]),lb=idx.map(i=>d.labels[i]);
+ const q=fit2(x,y),F=v=>q.a+q.b*v+q.c*v*v,yh=x.map(F),r2=R2(y,yh),xs=-q.b/(2*q.c),ys=F(xs),inr=xs>=x[0]&&xs<=x[x.length-1];
+ const xn=laf?T('อัตราภาษี (%)','Tax rate (%)'):T('รายได้ต่อหัว','Income per capita'),yn=laf?T('รายได้ภาษี','Tax revenue'):T('ค่า Gini','Gini'),
+ curve=sp(x[0],x[x.length-1]).map(v=>({x:v,y:F(v)}));
+ const shape=q.c<0?T('รูปตัว U คว่ำ (∩)','inverted-U (∩)'):T('รูปตัว U (∪)','U-shaped (∪)');
+ const note=laf?T(`ประมาณเส้น Laffer ด้วยสมการกำลังสอง R = ${f(q.a,2)} + ${f(q.b,3)}t + ${f(q.c,5)}t² (R² = ${f(r2,3)}) ได้รูป ${shape} อัตราภาษีที่ให้รายได้สูงสุดประมาณ ${f(xs,1)}% (รายได้ ≈ ${f(ys,1)}) ${inr?'อยู่ในช่วงข้อมูลที่สังเกตได้':'อยู่นอกช่วงข้อมูล ควรระวังการตีความ'} อัตราภาษีที่สูงกว่านี้เข้าสู่ “ช่วงต้องห้าม” (prohibitive range) ซึ่งการขึ้นภาษีทำให้รายได้ลดลง`,
+  `A quadratic fit R = ${f(q.a,2)} + ${f(q.b,3)}t + ${f(q.c,5)}t² (R² = ${f(r2,3)}) gives a ${shape} curve. Revenue peaks near a ${f(xs,1)}% tax rate (revenue ≈ ${f(ys,1)}), ${inr?'inside':'outside'} the observed range${inr?'':' — interpret with care'}. Rates above the peak fall in the prohibitive range, where raising taxes reduces revenue.`)
+ :T(`ประมาณเส้น Kuznets ด้วยสมการกำลังสอง Gini = ${f(q.a,2)} + ${f(q.b,5)}y + ${f(q.c,9)}y² (R² = ${f(r2,3)}) ได้รูป ${shape} ${q.c<0?`ความเหลื่อมล้ำสูงสุดที่รายได้ต่อหัวราว ${f(xs,0)} (Gini ≈ ${f(ys,1)}) หลังจากนั้นลดลง ซึ่ง${inr?'สอดคล้อง':'อาจไม่ชัดเจน'}กับสมมติฐาน Kuznets`:'ไม่สอดคล้องกับสมมติฐาน U คว่ำของ Kuznets'}`,
+  `Quadratic fit Gini = ${f(q.a,2)} + ${f(q.b,5)}y + ${f(q.c,9)}y² (R² = ${f(r2,3)}) gives a ${shape} curve. ${q.c<0?`Inequality peaks at income per capita ≈ ${f(xs,0)} (Gini ≈ ${f(ys,1)}) then declines, which ${inr?'is consistent with':'only weakly supports'} the Kuznets hypothesis.`:'This does not support the inverted-U Kuznets hypothesis.'}`);
+ return{tables:[{t:T("ตารางข้อมูลและค่าประมาณ","Data & fitted values"),h:[T("ข้อมูล","Obs."),xn,yn,T("ค่าประมาณ","Fitted"),T("ส่วนเหลือ","Residual"),T("ตำแหน่งเทียบจุดเปลี่ยน","Vs. turning point")],r:x.map((v,i)=>[lb[i],f(v,2),f(y[i],2),f(yh[i],2),f(y[i]-yh[i],2),v<xs?T('ก่อนจุดเปลี่ยน','before'):T('หลังจุดเปลี่ยน','after')])},
+ {t:T("สถิติวิเคราะห์","Statistics"),h:[T("ตัวชี้วัด","Measure"),T("ค่า","Value")],r:[["n",x.length],["a",f(q.a,6)],["b",f(q.b,6)],["c",f(q.c,9)],["R²",f(r2,4)],[T("สหสัมพันธ์ r","Correlation r"),f(corr(x,y),4)],[T("จุดเปลี่ยน x*","Turning point x*"),f(xs,3)],[T("ค่า y ที่จุดเปลี่ยน","y at turning point"),f(ys,3)],[T("รูปร่างเส้น","Shape"),shape],[T("ค่าเฉลี่ย x","Mean x"),f(mean(x),3)],[T("ค่าเฉลี่ย y","Mean y"),f(mean(y),3)]]}],note,
+ charts:[{t:T("กระจายจุด + เส้นประมาณ","Scatter + fitted curve"),cfg:{type:'scatter',data:{datasets:[D(T('ข้อมูลจริง','Observed'),x.map((v,i)=>({x:v,y:y[i]})),P[0],{pointRadius:5,backgroundColor:P[0]}),D(T('เส้นกำลังสอง','Quadratic fit'),curve,P[1],FIT)]},options:{scales:sc(xn,yn)}}},
+  {t:T("แท่ง + เส้นประมาณ","Bars + fitted line"),cfg:{type:'bar',data:{labels:x.map(v=>f(v,0)),datasets:[D(yn,y,P[2],{backgroundColor:P[2]+'bb'}),D(T('ค่าประมาณ','Fitted'),yh,P[1],{type:'line',tension:.3,pointRadius:3})]}}},
+  {t:T("แนวโน้มแบบพื้นที่","Area trend"),cfg:{type:'line',data:{labels:x.map(v=>f(v,0)),datasets:[D(yn,y,P[4],{fill:true,tension:.3})]}}},
+  {t:T("ส่วนเหลือ (Residual)","Residuals"),cfg:{type:'bar',data:{labels:x.map(v=>f(v,0)),datasets:[D(T('ส่วนเหลือ','Residual'),y.map((v,i)=>v-yh[i]),P[3],{backgroundColor:sgn(y.map((v,i)=>v-yh[i]))})]}}},
+  {t:T("เรดาร์เทียบจริง/ประมาณ","Radar observed vs fitted"),cfg:{type:'radar',data:{labels:x.map(v=>f(v,0)),datasets:[D(T('จริง','Observed'),y,P[0]),D(T('ประมาณ','Fitted'),yh,P[1])]}}}]}}
+
+function phillips(d){const u=d.cols[0],p=d.cols[1],lb=d.labels;if(u.some(v=>v<=0))throw {m:T("อัตราว่างงานต้องมากกว่า 0","Unemployment must be > 0")};
+ const L=fit1(u,p),H=fit1(u.map(v=>1/v),p),lh=u.map(v=>L.a+L.b*v),hh=u.map(v=>H.a+H.b/v),rl=R2(p,lh),rh=R2(p,hh);
+ const nl=-L.a/L.b,nh=H.a<0?-H.b/H.a:NaN,r=corr(u,p),xr=sp(Math.min(...u),Math.max(...u));
+ return{tables:[{t:T("ตารางข้อมูลและค่าประมาณ","Data & fitted values"),h:[T("ข้อมูล","Obs."),T("ว่างงาน u (%)","Unemployment u (%)"),T("เงินเฟ้อ π (%)","Inflation π (%)"),T("π เชิงเส้น","Linear π"),T("π ไฮเปอร์โบลา","Hyperbolic π"),T("ส่วนเหลือ (เส้นตรง)","Residual (linear)")],r:u.map((v,i)=>[lb[i],f(v,2),f(p[i],2),f(lh[i],2),f(hh[i],2),f(p[i]-lh[i],2)])},
+ {t:T("สถิติวิเคราะห์","Statistics"),h:[T("ตัวชี้วัด","Measure"),T("ค่า","Value")],r:[["n",u.length],[T("สหสัมพันธ์ r(u,π)","Correlation r(u,π)"),f(r,4)],[T("เชิงเส้น: π = a + b·u","Linear: π = a + b·u"),`${f(L.a,4)} + ${f(L.b,4)}·u`],["R² "+T("เชิงเส้น","linear"),f(rl,4)],[T("ไฮเปอร์โบลา: π = a + b/u","Hyperbolic: π = a + b/u"),`${f(H.a,4)} + ${f(H.b,4)}/u`],["R² "+T("ไฮเปอร์โบลา","hyperbolic"),f(rh,4)],[T("อัตราแลกเปลี่ยน (ลด u 1 จุด → π เปลี่ยน)","Trade-off (u −1pt → Δπ)"),f(-L.b,4)],[T("ว่างงานที่ π=0 (เชิงเส้น)","u at π=0 (linear)"),f(nl,3)],[T("ว่างงานที่ π=0 (ไฮเปอร์โบลา)","u at π=0 (hyperbolic)"),f(nh,3)],[T("ค่าเฉลี่ย u / π","Mean u / π"),`${f(mean(u),2)} / ${f(mean(p),2)}`]]}],
+ note:T(`เส้น Phillips แสดงความสัมพันธ์ผกผันระหว่างอัตราว่างงานกับเงินเฟ้อ สหสัมพันธ์ r = ${f(r,3)} ${r<-.3?'(ผกผัน สอดคล้องกับทฤษฎี)':'(ไม่ชัดเจนตามทฤษฎี)'} รูปเชิงเส้นอธิบายได้ ${f(rl*100,1)}% และรูปไฮเปอร์โบลา ${f(rh*100,1)}% ลดว่างงาน 1 จุดสัมพันธ์กับเงินเฟ้อที่เปลี่ยน ${f(-L.b,2)} จุด อัตราว่างงานที่เงินเฟ้อเป็นศูนย์ประมาณ ${f(nl,2)}% (ใช้เป็นภาพประกอบ ไม่ใช่ NAIRU ที่แท้จริง)`,
+  `The Phillips curve shows the inverse relation between unemployment and inflation. r = ${f(r,3)} ${r<-.3?'(inverse, consistent with theory)':'(weak/not as predicted)'}. The linear form explains ${f(rl*100,1)}% of variance, the hyperbolic ${f(rh*100,1)}%. One point less unemployment is associated with ${f(-L.b,2)} points more inflation. Unemployment at zero inflation is ≈ ${f(nl,2)}% (illustrative, not a true NAIRU estimate).`),
+ charts:[{t:T("กระจายจุด + เส้นประมาณ","Scatter + fits"),cfg:{type:'scatter',data:{datasets:[D(T('ข้อมูลจริง','Observed'),u.map((v,i)=>({x:v,y:p[i]})),P[0],{pointRadius:5,backgroundColor:P[0]}),D(T('เชิงเส้น','Linear'),xr.map(v=>({x:v,y:L.a+L.b*v})),P[1],FIT),D(T('ไฮเปอร์โบลา','Hyperbolic'),xr.map(v=>({x:v,y:H.a+H.b/v})),P[3],FIT)]},options:{scales:sc(T('ว่างงาน (%)','Unemployment (%)'),T('เงินเฟ้อ (%)','Inflation (%)'))}}},
+  {t:T("ว่างงาน vs เงินเฟ้อ ตามลำดับ","Unemployment vs inflation over time"),cfg:{type:'line',data:{labels:lb,datasets:[D(T('ว่างงาน (%)','Unemployment (%)'),u,P[0],{yAxisID:'y'}),D(T('เงินเฟ้อ (%)','Inflation (%)'),p,P[1],{yAxisID:'y1'})]},options:{scales:{y:{position:'left'},y1:{position:'right',grid:{drawOnChartArea:false}}}}}},
+  {t:T("แท่งเปรียบเทียบ","Grouped bars"),cfg:{type:'bar',data:{labels:lb,datasets:[D('u',u,P[0],{backgroundColor:P[0]}),D('π',p,P[1],{backgroundColor:P[1]})]}}},
+  {t:T("เงินเฟ้อ (พื้นที่)","Inflation (area)"),cfg:{type:'line',data:{labels:lb,datasets:[D('π',p,P[2],{fill:true,tension:.3})]}}},
+  {t:T("สัดส่วนว่างงานต่อรวม","Share of unemployment (polar)"),cfg:{type:'polarArea',data:{labels:lb,datasets:[{data:u,backgroundColor:lb.map((_,i)=>P[i%8]+'aa')}]}}}]}}
+
+function say(d){const s=d.cols[0],a=d.cols[1],lb=d.labels,g=a.map((v,i)=>v-s[i]),ra=a.map((v,i)=>v/s[i]*100),L=fit1(s,a),r=corr(s,a),yh=s.map(v=>L.a+L.b*v);
+ const sur=g.filter(v=>v>0).length,def=g.filter(v=>v<0).length,eq=g.length-sur-def,mr=mean(ra);
+ return{tables:[{t:T("ตารางข้อมูลและช่องว่าง AD−AS","Data & AD−AS gap"),h:[T("ข้อมูล","Obs."),"AS","AD",T("ช่องว่าง AD−AS","Gap AD−AS"),"AD/AS (%)",T("สถานะ","Status")],r:s.map((v,i)=>[lb[i],f(v,2),f(a[i],2),f(g[i],2),f(ra[i],2),g[i]>0?T('อุปสงค์ล้น','Excess demand'):g[i]<0?T('อุปทานล้น','Excess supply'):T('สมดุล','Balanced')])},
+ {t:T("สถิติวิเคราะห์","Statistics"),h:[T("ตัวชี้วัด","Measure"),T("ค่า","Value")],r:[["n",s.length],[T("สหสัมพันธ์ r(AS,AD)","Correlation r(AS,AD)"),f(r,4)],["AD = a + b·AS",`${f(L.a,3)} + ${f(L.b,4)}·AS`],["R²",f(R2(a,yh),4)],[T("ค่าเฉลี่ย AD/AS (%)","Mean AD/AS (%)"),f(mr,3)],[T("ช่องว่างเฉลี่ย","Mean gap"),f(mean(g),3)],[T("ช่องว่างสะสม","Cumulative gap"),f(sum(g),3)],[T("ปีที่ AD>AS","Periods AD>AS"),sur],[T("ปีที่ AD<AS","Periods AD<AS"),def],[T("ปีที่ AD=AS","Periods AD=AS"),eq]]}],
+ note:T(`กฎของเซย์ (“อุปทานสร้างอุปสงค์ของมันเอง”) คาดว่า AD ≈ AS และ b ≈ 1 ผลประมาณ AD/AS เฉลี่ย ${f(mr,2)}% ความชัน b = ${f(L.b,3)} และ r = ${f(r,3)} ${Math.abs(mr-100)<2&&Math.abs(L.b-1)<.1?'ข้อมูลสอดคล้องกับกฎของเซย์ในระยะยาว':'ข้อมูลเบี่ยงเบนจาก 1:1 อย่างมีนัยสำคัญ'} พบช่วงที่อุปทานล้น ${def} ช่วง และอุปสงค์ล้น ${sur} ช่วง ซึ่งแสดงว่าอาจมีภาวะอุปสงค์ไม่เพียงพอ (มุมมองแบบ Keynes) ในบางช่วง`,
+  `Say’s Law (“supply creates its own demand”) implies AD ≈ AS and slope b ≈ 1. Mean AD/AS is ${f(mr,2)}%, slope b = ${f(L.b,3)}, r = ${f(r,3)}. ${Math.abs(mr-100)<2&&Math.abs(L.b-1)<.1?'The data are consistent with Say’s Law over the long run.':'The data deviate noticeably from a 1:1 relation.'} There are ${def} periods of excess supply and ${sur} of excess demand, suggesting demand deficiency (Keynesian view) in some periods.`),
+ charts:[{t:T("AS เทียบ AD","AS vs AD"),cfg:{type:'line',data:{labels:lb,datasets:[D('AS',s,P[0],{tension:.3}),D('AD',a,P[1],{tension:.3})]}}},
+  {t:T("ช่องว่าง AD − AS","Gap AD − AS"),cfg:{type:'bar',data:{labels:lb,datasets:[D(T('ช่องว่าง','Gap'),g,P[2],{backgroundColor:sgn(g)})]}}},
+  {t:T("AD เทียบ AS (เส้น 45°)","AD vs AS (45° line)"),cfg:{type:'scatter',data:{datasets:[D('AD-AS',s.map((v,i)=>({x:v,y:a[i]})),P[0],{pointRadius:5,backgroundColor:P[0]}),D(T('เส้น AD=AS','AD=AS line'),[{x:Math.min(...s,...a),y:Math.min(...s,...a)},{x:Math.max(...s,...a),y:Math.max(...s,...a)}],'#888',{...FIT,borderDash:[6,4]}),D(T('ถดถอย','Regression'),[Math.min(...s),Math.max(...s)].map(v=>({x:v,y:L.a+L.b*v})),P[1],FIT)]},options:{scales:sc('AS','AD')}}},
+  {t:T("สัดส่วนช่วงเวลา","Period balance"),cfg:{type:'doughnut',data:{labels:[T('อุปสงค์ล้น','Excess demand'),T('อุปทานล้น','Excess supply'),T('สมดุล','Balanced')],datasets:[{data:[sur,def,eq],backgroundColor:['#16a34a','#dc2626','#888']}]}}},
+  {t:"AD/AS (%)",cfg:{type:'line',data:{labels:lb,datasets:[D('AD/AS (%)',ra,P[4],{fill:true,tension:.3}),D('100%',ra.map(()=>100),'#888',{pointRadius:0,noVals:true,borderDash:[5,4]})]}}}]}}
+
+function hd(d){const s=d.cols[0],v=d.cols[1],lb=d.labels,dl=+$('hdd').value||0,g0=+$('hdg').value||100;if(v.some(x=>x<=0))throw {m:T("ค่า v ต้องมากกว่า 0","v must be > 0")};
+ const g=s.map((x,i)=>x/v[i]),gn=g.map(x=>x-dl),G=[g0];for(let i=1;i<s.length;i++)G.push(G[i-1]*(1+gn[i-1]/100));
+ const vb=mean(v),gm=mean(gn),LS=fit1(s,g);
+ return{tables:[{t:T("ตารางข้อมูลและผลการคำนวณ","Data & results"),h:[T("ข้อมูล","Obs."),"s (%)","v",T("g = s/v (%)","g = s/v (%)"),T("g สุทธิ (−δ) (%)","Net g (−δ) (%)"),T("GDP สมมติ","Projected GDP")],r:s.map((x,i)=>[lb[i],f(x,2),f(v[i],2),f(g[i],3),f(gn[i],3),f(G[i],2)])},
+ {t:T("สถิติวิเคราะห์","Statistics"),h:[T("ตัวชี้วัด","Measure"),T("ค่า","Value")],r:[["n",s.length],[T("ค่าเฉลี่ย s (%)","Mean s (%)"),f(mean(s),3)],[T("ค่าเฉลี่ย v","Mean v"),f(vb,3)],["δ (%)",f(dl,2)],[T("g เฉลี่ย (%)","Mean g (%)"),f(mean(g),3)],[T("g สุทธิเฉลี่ย (%)","Mean net g (%)"),f(gm,3)],[T("g สูงสุด / ต่ำสุด","Max / min g"),`${f(Math.max(...g),3)} / ${f(Math.min(...g),3)}`],[T("s ที่ต้องใช้เพื่อ g = 5% (ที่ v เฉลี่ย)","s needed for g = 5% (at mean v)"),f(5*vb+dl*vb,2)+'%'],[T("สหสัมพันธ์ r(s,g)","Correlation r(s,g)"),f(corr(s,g),4)],[T("GDP ตอนท้าย","Final GDP"),f(G[G.length-1],2)]]}],
+ note:T(`โมเดล Harrod-Domar: g = s/v (อัตราการเติบโตเท่ากับอัตราการออมหารด้วยอัตราส่วนทุนต่อผลผลิต) ค่าเฉลี่ย s = ${f(mean(s),1)}%, v = ${f(vb,2)} ให้ g เฉลี่ย ${f(mean(g),2)}% (สุทธิหลังหัก δ = ${f(gm,2)}%) หากต้องการโต 5% ต่อปีที่ v เท่าเดิม ต้องมีอัตราออมประมาณ ${f(5*vb+dl*vb,1)}% คอลัมน์ GDP สมมติคำนวณโดยเริ่มจาก GDP เริ่มต้นที่ระบุแล้วทบด้วย g สุทธิรายช่วง`,
+  `Harrod-Domar: g = s/v (growth equals the saving rate divided by the capital-output ratio). With mean s = ${f(mean(s),1)}% and v = ${f(vb,2)}, mean g = ${f(mean(g),2)}% (net of δ = ${f(gm,2)}%). To grow 5% a year at unchanged v, the saving rate must be about ${f(5*vb+dl*vb,1)}%. The projected GDP column starts from the initial GDP and compounds the net growth rate period by period.`),
+ charts:[{t:T("อัตราการเติบโต g","Growth rate g"),cfg:{type:'line',data:{labels:lb,datasets:[D('g (%)',g,P[0],{tension:.3}),D(T('g สุทธิ (%)','Net g (%)'),gn,P[1],{tension:.3})]}}},
+  {t:T("อัตราออม s กับ g","Saving rate s and g"),cfg:{type:'bar',data:{labels:lb,datasets:[D('s (%)',s,P[2],{backgroundColor:P[2]+'bb',yAxisID:'y'}),D('g (%)',g,P[1],{type:'line',yAxisID:'y1',tension:.3})]},options:{scales:{y:{position:'left'},y1:{position:'right',grid:{drawOnChartArea:false}}}}}},
+  {t:T("s เทียบ g","s vs g"),cfg:{type:'scatter',data:{datasets:[D('(s, g)',s.map((x,i)=>({x,y:g[i]})),P[0],{pointRadius:5,backgroundColor:P[0]}),D(T('g = s/v เฉลี่ย','g = s/mean v'),[Math.min(...s),Math.max(...s)].map(x=>({x,y:x/vb})),P[3],FIT)]},options:{scales:sc('s (%)','g (%)')}}},
+  {t:T("เส้นทาง GDP สมมติ","Projected GDP path"),cfg:{type:'line',data:{labels:lb,datasets:[D('GDP',G,P[4],{fill:true,tension:.3})]}}},
+  {t:T("อัตราส่วนทุนต่อผลผลิต v","Capital-output ratio v"),cfg:{type:'bar',data:{labels:lb,datasets:[D('v',v,P[5],{backgroundColor:P[5]})]}}},
+  {t:T("เรดาร์ s, g","Radar s, g"),cfg:{type:'radar',data:{labels:lb,datasets:[D('s',s,P[0]),D('g',g,P[1])]}}}]}}
+
+/* ---------- rendering ---------- */
+function tbl(t){return `<h3>${t.t}</h3><table><thead><tr>${t.h.map(h=>`<th>${h}</th>`).join('')}</tr></thead><tbody>${t.r.map(r=>`<tr>${r.map(c=>`<td>${c}</td>`).join('')}</tr>`).join('')}</tbody></table>`}
+function showT(){if(!res)return;$('pgr').classList.add('hide');$('ptab').classList.remove('hide');
+ $('cap').innerHTML=`<h2 style="margin-bottom:6px">${res.title}</h2>`+res.tables.map(tbl).join('')+`<p class="note"><b>${T('คำอธิบาย','Explanation')}:</b> ${res.note}</p>`}
+$('dpng').onclick=()=>html2canvas($('cap'),{backgroundColor:'#fff',scale:3,scrollX:0,scrollY:0,width:$('cap').scrollWidth,height:$('cap').scrollHeight,windowWidth:Math.max($('cap').scrollWidth+60,innerWidth)}).then(c=>dl(c.toDataURL('image/png'),key+'_table.png'));
+$('dxls').onclick=()=>{const wb=XLSX.utils.book_new();res.tables.forEach((t,i)=>XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([t.h,...t.r]),(i?'Stats':'Data')));
+ XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([[res.title],[res.note.replace(/<[^>]+>/g,'')]]),'Notes');XLSX.writeFile(wb,key+'_analysis.xlsx')};
+function dl(u,n){const a=document.createElement('a');a.href=u;a.download=n;a.click()}
+function killCharts(){charts.forEach(c=>c.destroy());charts=[]}
+const fmt=v=>Math.abs(v)>=1000?Math.round(v).toLocaleString():+(+v).toFixed(2);
+Chart.register({id:'vals',beforeDraw(c){const x=c.ctx;x.save();x.globalCompositeOperation='destination-over';x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height);x.restore()},
+ afterDatasetsDraw(c){if(!c.$show)return;const x=c.ctx;x.save();x.font='bold 11px sans-serif';x.fillStyle='#111';x.textAlign='center';
+  c.data.datasets.forEach((ds,i)=>{if(ds.noVals||!c.isDatasetVisible(i))return;c.getDatasetMeta(i).data.forEach((el,j)=>{let v=ds.data[j];if(v&&typeof v==='object')v=v.y;if(v==null||isNaN(v))return;const p=el.tooltipPosition?el.tooltipPosition():el;x.fillText(fmt(v),p.x,p.y-7)})});x.restore()}});
+function hiRes(ch,cfg,name){const c=JSON.parse(JSON.stringify(cfg));c.options=Object.assign({},c.options,{responsive:false,animation:false,devicePixelRatio:2,font:{size:16}});
+ const cv=document.createElement('canvas');cv.width=1400;cv.height=800;cv.style.cssText='position:fixed;left:-9999px;width:1400px;height:800px';document.body.appendChild(cv);
+ const h=new Chart(cv,c);h.$show=ch.$show;h.update();dl(h.toBase64Image('image/png',1),name);h.destroy();cv.remove()}
+function showG(){if(!res)return;$('ptab').classList.add('hide');$('pgr').classList.remove('hide');killCharts();const g=$('grid');g.innerHTML='';
+ res.charts.forEach((o,i)=>{const d=document.createElement('div');d.className='ch';d.innerHTML=`<h3>${o.t}${country?' · '+cname():''}</h3><div class="box"><canvas></canvas></div><div class="row"><label><input type="checkbox"> ${i18('showv')}</label><button>${i18('gpng')}</button></div>`;g.appendChild(d);
+  const cfg=o.cfg;cfg.options=Object.assign({responsive:true,maintainAspectRatio:false,animation:false},cfg.options||{});
+  const ch=new Chart(d.querySelector('canvas'),cfg);ch.$show=false;charts.push(ch);
+  d.querySelector('input').onchange=e=>{ch.$show=e.target.checked;ch.update()};
+  d.querySelector('button').onclick=()=>hiRes(ch,cfg,`${key}_chart${i+1}.png`)})}
+applyLang();
+</script>
+</body>
+</html>
